@@ -1,0 +1,1051 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#0b0f19">
+<title>Life Tracker</title>
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E🔮%3C/text%3E%3C/svg%3E">
+<style>
+  :root {
+    --bg: #0b0f19;
+    --card: #151b2b;
+    --border: #1e293b;
+    --text: #f1f5f9;
+    --muted: #64748b;
+    --priority-high: #f87171;
+    --priority-med: #fbbf24;
+    --priority-low: #4ade80;
+    --accent: #818cf8;
+    --accent2: #a78bfa;
+    --tag-health: #f472b6;
+    --tag-work: #60a5fa;
+    --tag-learning: #a78bfa;
+    --tag-social: #fb923c;
+    --tag-other: #94a3b8;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    margin: 0;
+    padding: 0;
+    min-height: 100vh;
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+    overscroll-behavior-y: none;
+  }
+  .app-container { max-width: 100%; margin: 0 auto; padding-bottom: 80px; }
+  .header {
+    padding: 16px 16px 8px;
+    position: sticky;
+    top: 0;
+    background: rgba(11,15,25,0.95);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    z-index: 100;
+    border-bottom: 1px solid var(--border);
+  }
+  h1 { font-size: 1.3rem; margin: 0 0 2px; }
+  .subtitle { color: var(--muted); font-size: 0.75rem; margin: 0 0 12px; }
+  .top-stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+  .top-stat {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 4px;
+    text-align: center;
+  }
+  .top-stat .val { font-size: 1.3rem; font-weight: 700; color: var(--accent); line-height: 1; }
+  .top-stat .lbl { font-size: 0.6rem; color: var(--muted); margin-top: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .tabs {
+    display: flex;
+    gap: 4px;
+    overflow-x: auto;
+    padding: 0 0 8px;
+    scrollbar-width: none;
+  }
+  .tabs::-webkit-scrollbar { display: none; }
+  .tab {
+    flex: 0 0 auto;
+    padding: 8px 14px;
+    border-radius: 20px;
+    cursor: pointer;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--muted);
+    background: var(--card);
+    border: 1px solid var(--border);
+    white-space: nowrap;
+    transition: all 0.2s;
+  }
+  .tab.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .panel { display: none; padding: 0 16px 80px; }
+  .panel.active { display: block; }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 14px;
+    margin-bottom: 12px;
+  }
+  .card h3 { margin: 0 0 12px; font-size: 0.95rem; display: flex; align-items: center; gap: 6px; }
+  .input-group { display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px; }
+  .input-row { display: flex; gap: 8px; flex-wrap: wrap; }
+  input[type="text"], input[type="date"], select, textarea {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 12px 14px;
+    border-radius: 10px;
+    font-size: 1rem;
+    width: 100%;
+    outline: none;
+    -webkit-appearance: none;
+  }
+  input:focus, select:focus, textarea:focus { border-color: var(--accent); }
+  select { flex: 1; min-width: 100px; }
+  textarea { min-height: 80px; resize: vertical; font-family: inherit; }
+  .btn {
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    padding: 12px 20px;
+    border-radius: 10px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 0.95rem;
+    width: 100%;
+    transition: opacity 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+  }
+  .btn:active { opacity: 0.8; transform: scale(0.98); }
+  .btn.secondary { background: var(--border); color: var(--text); }
+  .btn.danger { background: var(--priority-high); }
+  .btn.small { width: auto; padding: 6px 12px; font-size: 0.75rem; border-radius: 8px; }
+  .segmented {
+    display: flex;
+    background: var(--bg);
+    border-radius: 10px;
+    padding: 3px;
+    gap: 3px;
+  }
+  .segmented button {
+    flex: 1;
+    padding: 8px;
+    border: none;
+    background: transparent;
+    color: var(--muted);
+    font-size: 0.75rem;
+    font-weight: 600;
+    border-radius: 8px;
+    cursor: pointer;
+  }
+  .segmented button.active { background: var(--card); color: var(--text); box-shadow: 0 1px 3px rgba(0,0,0,0.3); }
+  .task-list { display: flex; flex-direction: column; gap: 8px; }
+  .task-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 12px;
+    background: var(--bg);
+    border-radius: 12px;
+    border-left: 4px solid transparent;
+    transition: all 0.2s;
+    position: relative;
+  }
+  .task-item.priority-high { border-left-color: var(--priority-high); }
+  .task-item.priority-med { border-left-color: var(--priority-med); }
+  .task-item.priority-low { border-left-color: var(--priority-low); }
+  .task-item.completed { opacity: 0.45; }
+  .task-item.completed .task-text { text-decoration: line-through; }
+  .task-item input[type="checkbox"] {
+    width: 22px; height: 22px;
+    accent-color: var(--accent);
+    cursor: pointer;
+    margin-top: 2px;
+    flex-shrink: 0;
+  }
+  .task-content { flex: 1; min-width: 0; }
+  .task-text { font-size: 0.95rem; word-break: break-word; display: block; }
+  .task-meta { display: flex; gap: 6px; margin-top: 6px; flex-wrap: wrap; }
+  .badge {
+    font-size: 0.65rem;
+    padding: 3px 8px;
+    border-radius: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+  }
+  .badge-high { background: rgba(248,113,113,0.15); color: var(--priority-high); }
+  .badge-med { background: rgba(251,191,36,0.15); color: var(--priority-med); }
+  .badge-low { background: rgba(74,222,128,0.15); color: var(--priority-low); }
+  .badge-tag-health { background: rgba(244,114,182,0.15); color: var(--tag-health); }
+  .badge-tag-work { background: rgba(96,165,250,0.15); color: var(--tag-work); }
+  .badge-tag-learning { background: rgba(167,139,250,0.15); color: var(--tag-learning); }
+  .badge-tag-social { background: rgba(251,146,60,0.15); color: var(--tag-social); }
+  .badge-tag-other { background: rgba(148,163,184,0.15); color: var(--tag-other); }
+  .badge-habit { background: rgba(99,102,241,0.15); color: var(--accent); }
+  .task-delete {
+    background: transparent;
+    color: var(--muted);
+    border: none;
+    font-size: 1.3rem;
+    padding: 0 4px;
+    cursor: pointer;
+    line-height: 1;
+  }
+  .task-delete:active { color: var(--priority-high); }
+  .progress-bar {
+    width: 100%;
+    height: 6px;
+    background: var(--bg);
+    border-radius: 3px;
+    margin: 10px 0;
+    overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    border-radius: 3px;
+    transition: width 0.4s ease;
+  }
+  .calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 3px;
+    margin-top: 10px;
+  }
+  .cal-header {
+    text-align: center;
+    font-size: 0.65rem;
+    color: var(--muted);
+    padding: 4px;
+    font-weight: 600;
+  }
+  .cal-cell {
+    aspect-ratio: 1;
+    border-radius: 8px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: all 0.15s;
+    position: relative;
+    padding: 2px;
+  }
+  .cal-cell:active { transform: scale(0.92); }
+  .cal-cell.empty { background: transparent; border: none; cursor: default; }
+  .cal-cell.has-tasks { background: rgba(99,102,241,0.2); border-color: var(--accent); }
+  .cal-cell.today { box-shadow: 0 0 0 2px var(--accent); }
+  .cal-cell.selected { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .cal-cell .cal-dots { display: flex; gap: 2px; margin-top: 2px; }
+  .cal-dot { width: 4px; height: 4px; border-radius: 50%; }
+  .year-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    margin-top: 10px;
+  }
+  .month-card {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px;
+    text-align: center;
+    cursor: pointer;
+  }
+  .month-card .m-name { font-size: 0.7rem; color: var(--muted); }
+  .month-card .m-score { font-size: 1.1rem; font-weight: 700; color: var(--accent); margin-top: 2px; }
+  .month-card .m-bar { height: 3px; background: var(--border); border-radius: 2px; margin-top: 6px; overflow: hidden; }
+  .month-card .m-bar-fill { height: 100%; background: var(--accent); border-radius: 2px; }
+  .review-box {
+    background: linear-gradient(135deg, rgba(99,102,241,0.08), rgba(139,92,246,0.08));
+    border: 1px solid rgba(99,102,241,0.3);
+    border-radius: 12px;
+    padding: 14px;
+    margin-bottom: 12px;
+  }
+  .review-box h4 { margin: 0 0 8px; color: var(--accent); font-size: 0.85rem; }
+  .review-box p { margin: 0 0 10px; font-size: 0.8rem; color: var(--muted); line-height: 1.5; }
+  .focus-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 14px;
+    background: var(--bg);
+    border-radius: 10px;
+    margin-bottom: 10px;
+    border: 1px solid var(--border);
+    margin: 0 16px 12px;
+    cursor: pointer;
+  }
+  .focus-toggle span { font-size: 0.9rem; font-weight: 600; }
+  .toggle-switch {
+    width: 48px;
+    height: 26px;
+    background: var(--border);
+    border-radius: 13px;
+    position: relative;
+    cursor: pointer;
+    transition: background 0.2s;
+    flex-shrink: 0;
+  }
+  .toggle-switch.on { background: var(--accent); }
+  .toggle-switch::after {
+    content: '';
+    position: absolute;
+    width: 22px; height: 22px;
+    background: #fff;
+    border-radius: 50%;
+    top: 2px; left: 2px;
+    transition: transform 0.2s;
+  }
+  .toggle-switch.on::after { transform: translateX(22px); }
+  .empty-state { text-align: center; padding: 30px 20px; color: var(--muted); font-size: 0.85rem; }
+  .bottom-nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: rgba(11,15,25,0.95);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-top: 1px solid var(--border);
+    display: flex;
+    justify-content: space-around;
+    padding: 8px 0 24px;
+    z-index: 100;
+  }
+  .nav-btn {
+    background: none;
+    border: none;
+    color: var(--muted);
+    font-size: 0.65rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    cursor: pointer;
+    padding: 4px 12px;
+    transition: color 0.2s;
+  }
+  .nav-btn.active { color: var(--accent); }
+  .nav-btn .nav-icon { font-size: 1.3rem; }
+  .scroll-container {
+    max-height: 50vh;
+    overflow-y: auto;
+    padding-right: 2px;
+  }
+  .scroll-container::-webkit-scrollbar { width: 4px; }
+  .scroll-container::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+  .export-section {
+    padding: 0 16px;
+    margin-bottom: 20px;
+  }
+  .export-btn {
+    background: var(--card);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 12px;
+    border-radius: 10px;
+    width: 100%;
+    font-size: 0.9rem;
+    cursor: pointer;
+    margin-bottom: 8px;
+  }
+  .export-btn:active { background: var(--border); }
+</style>
+</head>
+<body>
+<div class="app-container">
+  <div class="header">
+    <h1>🔮 Life Tracker</h1>
+    <p class="subtitle">Built on Goal-Setting Theory & Behavioral Psychology</p>
+    <div class="top-stats">
+      <div class="top-stat"><div class="val" id="stat-total">0</div><div class="lbl">Days</div></div>
+      <div class="top-stat"><div class="val" id="stat-streak">0</div><div class="lbl">Streak</div></div>
+      <div class="top-stat"><div class="val" id="stat-completion">0%</div><div class="lbl">Done</div></div>
+      <div class="top-stat"><div class="val" id="stat-priority">0</div><div class="lbl">Priority</div></div>
+    </div>
+    <div class="tabs" id="tab-bar">
+      <button class="tab active" onclick="switchTab('daily')">📅 Daily</button>
+      <button class="tab" onclick="switchTab('weekly')">📆 Weekly</button>
+      <button class="tab" onclick="switchTab('monthly')">🗓️ Monthly</button>
+      <button class="tab" onclick="switchTab('yearly')">📊 Yearly</button>
+    </div>
+  </div>
+
+  <div class="focus-toggle" onclick="toggleFocusMode()">
+    <span>🔥 Focus Mode (Priority Only)</span>
+    <div class="toggle-switch" id="focus-toggle"></div>
+  </div>
+
+  <!-- DAILY -->
+  <div id="panel-daily" class="panel active">
+    <div class="card">
+      <h3>📅 <span id="current-date-label">Today</span></h3>
+      <div class="input-group">
+        <input type="date" id="day-date" />
+        <button class="btn" onclick="addDay()">Go to Date</button>
+      </div>
+    </div>
+    <div class="card">
+      <h3>➕ Add Task</h3>
+      <div class="input-group">
+        <input type="text" id="task-input" placeholder="What needs to be done?" />
+        <div class="input-row">
+          <select id="task-priority">
+            <option value="high">🔴 Priority</option>
+            <option value="med">🟡 Modest</option>
+            <option value="low">🟢 Easy</option>
+          </select>
+          <select id="task-tag">
+            <option value="health">💪 Health</option>
+            <option value="work">💼 Work</option>
+            <option value="learning">📚 Learning</option>
+            <option value="social">🤝 Social</option>
+            <option value="other">📌 Other</option>
+          </select>
+        </div>
+        <div class="segmented">
+          <button class="active" onclick="setTaskType('goal', this)">🎯 Goal</button>
+          <button onclick="setTaskType('habit', this)">🔄 Habit</button>
+        </div>
+        <div class="input-row">
+          <select id="task-time">
+            <option value="">Anytime</option>
+            <option value="morning">🌅 Morning</option>
+            <option value="afternoon">☀️ Afternoon</option>
+            <option value="evening">🌙 Evening</option>
+          </select>
+        </div>
+        <button class="btn" onclick="addTask()">Add Task</button>
+      </div>
+    </div>
+    <div class="card">
+      <h3>📋 Tasks</h3>
+      <div class="progress-bar"><div class="progress-fill" id="daily-progress" style="width:0%"></div></div>
+      <div class="task-list scroll-container" id="daily-tasks">
+        <div class="empty-state">Select a date and add your first task</div>
+      </div>
+    </div>
+    <div class="card">
+      <h3>📝 Daily Review</h3>
+      <div class="input-group">
+        <textarea id="daily-review-wins" placeholder="What went well today? (Small wins...)"></textarea>
+        <textarea id="daily-review-improve" placeholder="What could be better tomorrow?"></textarea>
+        <textarea id="daily-review-gratitude" placeholder="One thing you're grateful for..."></textarea>
+        <button class="btn secondary" onclick="saveDailyReview()">Save Review</button>
+      </div>
+    </div>
+    <div class="card">
+      <h3>📆 Calendar</h3>
+      <div class="calendar-grid" id="calendar-grid"></div>
+    </div>
+  </div>
+
+  <!-- WEEKLY -->
+  <div id="panel-weekly" class="panel">
+    <div class="card">
+      <h3>📆 Week Goals</h3>
+      <div class="input-group">
+        <input type="text" id="week-goal-input" placeholder="This week's focus..." />
+        <div class="input-row">
+          <select id="week-priority">
+            <option value="high">🔴 Priority</option>
+            <option value="med">🟡 Modest</option>
+            <option value="low">🟢 Easy</option>
+          </select>
+          <select id="week-tag">
+            <option value="health">💪 Health</option>
+            <option value="work">💼 Work</option>
+            <option value="learning">📚 Learning</option>
+            <option value="social">🤝 Social</option>
+            <option value="other">📌 Other</option>
+          </select>
+        </div>
+        <button class="btn" onclick="addWeekGoal()">Add Week Goal</button>
+      </div>
+      <div class="task-list scroll-container" id="weekly-tasks"><div class="empty-state">No weekly goals yet</div></div>
+    </div>
+    <div class="card">
+      <h3>📝 Weekly Review</h3>
+      <div class="input-group">
+        <textarea id="weekly-review-wins" placeholder="Biggest wins this week?"></textarea>
+        <textarea id="weekly-review-challenges" placeholder="What challenged you?"></textarea>
+        <textarea id="weekly-review-next" placeholder="Focus for next week..."></textarea>
+        <button class="btn secondary" onclick="saveWeeklyReview()">Save Review</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MONTHLY -->
+  <div id="panel-monthly" class="panel">
+    <div class="card">
+      <h3>🗓️ Month Goals</h3>
+      <div class="input-group">
+        <input type="text" id="month-goal-input" placeholder="This month's milestone..." />
+        <div class="input-row">
+          <select id="month-priority">
+            <option value="high">🔴 Priority</option>
+            <option value="med">🟡 Modest</option>
+            <option value="low">🟢 Easy</option>
+          </select>
+          <select id="month-tag">
+            <option value="health">💪 Health</option>
+            <option value="work">💼 Work</option>
+            <option value="learning">📚 Learning</option>
+            <option value="social">🤝 Social</option>
+            <option value="other">📌 Other</option>
+          </select>
+        </div>
+        <button class="btn" onclick="addMonthGoal()">Add Month Goal</button>
+      </div>
+      <div class="task-list scroll-container" id="monthly-tasks"><div class="empty-state">No monthly goals yet</div></div>
+    </div>
+    <div class="card">
+      <h3>📝 Monthly Review</h3>
+      <div class="input-group">
+        <textarea id="monthly-review-wins" placeholder="Major achievements this month?"></textarea>
+        <textarea id="monthly-review-patterns" placeholder="Patterns you noticed..."></textarea>
+        <textarea id="monthly-review-goals" placeholder="Goals for next month..."></textarea>
+        <button class="btn secondary" onclick="saveMonthlyReview()">Save Review</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- YEARLY -->
+  <div id="panel-yearly" class="panel">
+    <div class="card">
+      <h3>📊 Year Overview</h3>
+      <div class="year-grid" id="year-view"></div>
+    </div>
+    <div class="card">
+      <h3>🎯 Year Goals</h3>
+      <div class="input-group">
+        <input type="text" id="year-goal-input" placeholder="This year's vision..." />
+        <div class="input-row">
+          <select id="year-priority">
+            <option value="high">🔴 Priority</option>
+            <option value="med">🟡 Modest</option>
+            <option value="low">🟢 Easy</option>
+          </select>
+          <select id="year-tag">
+            <option value="health">💪 Health</option>
+            <option value="work">💼 Work</option>
+            <option value="learning">📚 Learning</option>
+            <option value="social">🤝 Social</option>
+            <option value="other">📌 Other</option>
+          </select>
+        </div>
+        <button class="btn" onclick="addYearGoal()">Add Year Goal</button>
+      </div>
+      <div class="task-list scroll-container" id="yearly-tasks"><div class="empty-state">No yearly goals yet</div></div>
+    </div>
+    <div class="card">
+      <h3>📝 Yearly Review</h3>
+      <div class="input-group">
+        <textarea id="yearly-review-wins" placeholder="Biggest wins this year?"></textarea>
+        <textarea id="yearly-review-growth" placeholder="How have you grown?"></textarea>
+        <textarea id="yearly-review-vision" placeholder="Vision for next year..."></textarea>
+        <button class="btn secondary" onclick="saveYearlyReview()">Save Review</button>
+      </div>
+    </div>
+    <div class="export-section">
+      <button class="export-btn" onclick="exportData()">📤 Export All Data (JSON)</button>
+      <button class="export-btn" onclick="document.getElementById('import-file').click()">📥 Import Data (JSON)</button>
+      <input type="file" id="import-file" accept=".json" style="display:none" onchange="importData(this)">
+    </div>
+  </div>
+
+  <div class="bottom-nav">
+    <button class="nav-btn active" onclick="switchTab('daily')"><span class="nav-icon">📅</span><span>Daily</span></button>
+    <button class="nav-btn" onclick="switchTab('weekly')"><span class="nav-icon">📆</span><span>Weekly</span></button>
+    <button class="nav-btn" onclick="switchTab('monthly')"><span class="nav-icon">🗓️</span><span>Monthly</span></button>
+    <button class="nav-btn" onclick="switchTab('yearly')"><span class="nav-icon">📊</span><span>Yearly</span></button>
+  </div>
+</div>
+
+<script>
+  let days = JSON.parse(localStorage.getItem('lt2_days') || '{}');
+  let weeklyGoals = JSON.parse(localStorage.getItem('lt2_weekly') || '[]');
+  let monthlyGoals = JSON.parse(localStorage.getItem('lt2_monthly') || '[]');
+  let yearlyGoals = JSON.parse(localStorage.getItem('lt2_yearly') || '[]');
+  let reviews = JSON.parse(localStorage.getItem('lt2_reviews') || '{}');
+  let selectedDate = new Date().toISOString().split('T')[0];
+  let focusMode = false;
+  let currentTaskType = 'goal';
+
+  document.getElementById('day-date').value = selectedDate;
+  document.getElementById('current-date-label').textContent = formatDate(selectedDate);
+  loadReviews();
+  renderAll();
+
+  function switchTab(tab) {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.nav-btn').forEach(n => n.classList.remove('active'));
+    const tabMap = { daily: 0, weekly: 1, monthly: 2, yearly: 3 };
+    const tabs = document.querySelectorAll('.tab');
+    const navs = document.querySelectorAll('.nav-btn');
+    if (tabs[tabMap[tab]]) tabs[tabMap[tab]].classList.add('active');
+    if (navs[tabMap[tab]]) navs[tabMap[tab]].classList.add('active');
+    document.getElementById('panel-' + tab).classList.add('active');
+    renderAll();
+  }
+
+  function toggleFocusMode() {
+    focusMode = !focusMode;
+    document.getElementById('focus-toggle').classList.toggle('on', focusMode);
+    renderDaily();
+  }
+
+  function setTaskType(type, btn) {
+    currentTaskType = type;
+    btn.parentElement.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+  }
+
+  function addDay() {
+    const date = document.getElementById('day-date').value;
+    if (!date) return;
+    if (!days[date]) days[date] = { tasks: [] };
+    selectedDate = date;
+    document.getElementById('current-date-label').textContent = formatDate(date);
+    save();
+    renderAll();
+  }
+
+  function ensureDay(date) { if (!days[date]) days[date] = { tasks: [] }; }
+
+  function addTask() {
+    const text = document.getElementById('task-input').value.trim();
+    const priority = document.getElementById('task-priority').value;
+    const tag = document.getElementById('task-tag').value;
+    const time = document.getElementById('task-time').value;
+    if (!text) return;
+    ensureDay(selectedDate);
+    days[selectedDate].tasks.push({
+      id: Date.now(), text, priority, tag, time, type: currentTaskType,
+      completed: false, created: new Date().toISOString()
+    });
+    document.getElementById('task-input').value = '';
+    save();
+    renderDaily();
+    renderCalendar();
+    updateStats();
+  }
+
+  function toggleTask(date, taskId) {
+    ensureDay(date);
+    const task = days[date].tasks.find(t => t.id === taskId);
+    if (task) { task.completed = !task.completed; save(); renderDaily(); updateStats(); }
+  }
+
+  function deleteTask(date, taskId) {
+    ensureDay(date);
+    days[date].tasks = days[date].tasks.filter(t => t.id !== taskId);
+    if (days[date].tasks.length === 0) delete days[date];
+    save();
+    renderDaily();
+    renderCalendar();
+    updateStats();
+  }
+
+  function selectDate(date) {
+    selectedDate = date;
+    document.getElementById('day-date').value = date;
+    document.getElementById('current-date-label').textContent = formatDate(date);
+    loadReviews();
+    renderDaily();
+    renderCalendar();
+  }
+
+  function addWeekGoal() {
+    const text = document.getElementById('week-goal-input').value.trim();
+    const priority = document.getElementById('week-priority').value;
+    const tag = document.getElementById('week-tag').value;
+    if (!text) return;
+    weeklyGoals.push({ id: Date.now(), text, priority, tag, completed: false });
+    document.getElementById('week-goal-input').value = '';
+    save(); renderWeekly(); updateStats();
+  }
+  function toggleWeekGoal(id) {
+    const g = weeklyGoals.find(x => x.id === id);
+    if (g) { g.completed = !g.completed; save(); renderWeekly(); updateStats(); }
+  }
+  function deleteWeekGoal(id) { weeklyGoals = weeklyGoals.filter(x => x.id !== id); save(); renderWeekly(); updateStats(); }
+
+  function addMonthGoal() {
+    const text = document.getElementById('month-goal-input').value.trim();
+    const priority = document.getElementById('month-priority').value;
+    const tag = document.getElementById('month-tag').value;
+    if (!text) return;
+    monthlyGoals.push({ id: Date.now(), text, priority, tag, completed: false });
+    document.getElementById('month-goal-input').value = '';
+    save(); renderMonthly(); updateStats();
+  }
+  function toggleMonthGoal(id) {
+    const g = monthlyGoals.find(x => x.id === id);
+    if (g) { g.completed = !g.completed; save(); renderMonthly(); updateStats(); }
+  }
+  function deleteMonthGoal(id) { monthlyGoals = monthlyGoals.filter(x => x.id !== id); save(); renderMonthly(); updateStats(); }
+
+  function addYearGoal() {
+    const text = document.getElementById('year-goal-input').value.trim();
+    const priority = document.getElementById('year-priority').value;
+    const tag = document.getElementById('year-tag').value;
+    if (!text) return;
+    yearlyGoals.push({ id: Date.now(), text, priority, tag, completed: false });
+    document.getElementById('year-goal-input').value = '';
+    save(); renderYearly(); updateStats();
+  }
+  function toggleYearGoal(id) {
+    const g = yearlyGoals.find(x => x.id === id);
+    if (g) { g.completed = !g.completed; save(); renderYearly(); updateStats(); }
+  }
+  function deleteYearGoal(id) { yearlyGoals = yearlyGoals.filter(x => x.id !== id); save(); renderYearly(); updateStats(); }
+
+  function saveDailyReview() {
+    if (!reviews[selectedDate]) reviews[selectedDate] = {};
+    reviews[selectedDate].daily = {
+      wins: document.getElementById('daily-review-wins').value,
+      improve: document.getElementById('daily-review-improve').value,
+      gratitude: document.getElementById('daily-review-gratitude').value,
+      saved: new Date().toISOString()
+    };
+    saveReviews();
+    alert('Daily review saved! ✨');
+  }
+  function saveWeeklyReview() {
+    const weekKey = getWeekKey();
+    if (!reviews[weekKey]) reviews[weekKey] = {};
+    reviews[weekKey].weekly = {
+      wins: document.getElementById('weekly-review-wins').value,
+      challenges: document.getElementById('weekly-review-challenges').value,
+      next: document.getElementById('weekly-review-next').value,
+      saved: new Date().toISOString()
+    };
+    saveReviews();
+    alert('Weekly review saved! ✨');
+  }
+  function saveMonthlyReview() {
+    const monthKey = selectedDate.slice(0, 7);
+    if (!reviews[monthKey]) reviews[monthKey] = {};
+    reviews[monthKey].monthly = {
+      wins: document.getElementById('monthly-review-wins').value,
+      patterns: document.getElementById('monthly-review-patterns').value,
+      goals: document.getElementById('monthly-review-goals').value,
+      saved: new Date().toISOString()
+    };
+    saveReviews();
+    alert('Monthly review saved! ✨');
+  }
+  function saveYearlyReview() {
+    const yearKey = selectedDate.slice(0, 4);
+    if (!reviews[yearKey]) reviews[yearKey] = {};
+    reviews[yearKey].yearly = {
+      wins: document.getElementById('yearly-review-wins').value,
+      growth: document.getElementById('yearly-review-growth').value,
+      vision: document.getElementById('yearly-review-vision').value,
+      saved: new Date().toISOString()
+    };
+    saveReviews();
+    alert('Yearly review saved! ✨');
+  }
+  function loadReviews() {
+    const d = reviews[selectedDate]?.daily;
+    if (d) {
+      document.getElementById('daily-review-wins').value = d.wins || '';
+      document.getElementById('daily-review-improve').value = d.improve || '';
+      document.getElementById('daily-review-gratitude').value = d.gratitude || '';
+    } else {
+      document.getElementById('daily-review-wins').value = '';
+      document.getElementById('daily-review-improve').value = '';
+      document.getElementById('daily-review-gratitude').value = '';
+    }
+    const w = reviews[getWeekKey()]?.weekly;
+    if (w) {
+      document.getElementById('weekly-review-wins').value = w.wins || '';
+      document.getElementById('weekly-review-challenges').value = w.challenges || '';
+      document.getElementById('weekly-review-next').value = w.next || '';
+    }
+    const m = reviews[selectedDate.slice(0, 7)]?.monthly;
+    if (m) {
+      document.getElementById('monthly-review-wins').value = m.wins || '';
+      document.getElementById('monthly-review-patterns').value = m.patterns || '';
+      document.getElementById('monthly-review-goals').value = m.goals || '';
+    }
+    const y = reviews[selectedDate.slice(0, 4)]?.yearly;
+    if (y) {
+      document.getElementById('yearly-review-wins').value = y.wins || '';
+      document.getElementById('yearly-review-growth').value = y.growth || '';
+      document.getElementById('yearly-review-vision').value = y.vision || '';
+    }
+  }
+  function getWeekKey() {
+    const d = new Date(selectedDate + 'T00:00:00');
+    const start = new Date(d);
+    start.setDate(d.getDate() - d.getDay());
+    return start.toISOString().split('T')[0];
+  }
+
+  function renderAll() { renderDaily(); renderWeekly(); renderMonthly(); renderYearly(); renderCalendar(); updateStats(); }
+
+  function renderDaily() {
+    const container = document.getElementById('daily-tasks');
+    ensureDay(selectedDate);
+    let tasks = days[selectedDate]?.tasks || [];
+    if (focusMode) tasks = tasks.filter(t => t.priority === 'high');
+    if (tasks.length === 0) {
+      container.innerHTML = focusMode
+        ? '<div class="empty-state">No Priority tasks for this day. Focus mode is ON.</div>'
+        : '<div class="empty-state">No tasks for this day. Add one above!</div>';
+      document.getElementById('daily-progress').style.width = '0%';
+      return;
+    }
+    const allTasks = days[selectedDate]?.tasks || [];
+    const completed = allTasks.filter(t => t.completed).length;
+    const pct = Math.round((completed / allTasks.length) * 100);
+    document.getElementById('daily-progress').style.width = pct + '%';
+    const pMap = { high: 0, med: 1, low: 2 };
+    const tMap = { morning: 0, afternoon: 1, evening: 2, '': 3 };
+    const sorted = [...tasks].sort((a, b) => {
+      if (a.completed !== b.completed) return a.completed ? 1 : -1;
+      if (pMap[a.priority] !== pMap[b.priority]) return pMap[a.priority] - pMap[b.priority];
+      return (tMap[a.time] || 3) - (tMap[b.time] || 3);
+    });
+    container.innerHTML = sorted.map(t => `
+      <div class="task-item priority-${t.priority} ${t.completed ? 'completed' : ''}">
+        <input type="checkbox" ${t.completed ? 'checked' : ''} onchange="toggleTask('${selectedDate}', ${t.id})">
+        <div class="task-content">
+          <span class="task-text">${escapeHtml(t.text)}</span>
+          <div class="task-meta">
+            <span class="badge badge-${t.priority}">${t.priority}</span>
+            <span class="badge badge-tag-${t.tag}">${t.tag}</span>
+            ${t.type === 'habit' ? '<span class="badge badge-habit">🔄 habit</span>' : ''}
+            ${t.time ? `<span class="badge">${t.time}</span>` : ''}
+          </div>
+        </div>
+        <button class="task-delete" onclick="deleteTask('${selectedDate}', ${t.id})">×</button>
+      </div>
+    `).join('');
+  }
+
+  function renderWeekly() {
+    const container = document.getElementById('weekly-tasks');
+    if (weeklyGoals.length === 0) { container.innerHTML = '<div class="empty-state">No weekly goals yet</div>'; return; }
+    const pMap = { high: 0, med: 1, low: 2 };
+    const sorted = [...weeklyGoals].sort((a, b) => {
+      if (a.completed !== b.completed) return a.completed ? 1 : -1;
+      return pMap[a.priority] - pMap[b.priority];
+    });
+    container.innerHTML = sorted.map(g => `
+      <div class="task-item priority-${g.priority} ${g.completed ? 'completed' : ''}">
+        <input type="checkbox" ${g.completed ? 'checked' : ''} onchange="toggleWeekGoal(${g.id})">
+        <div class="task-content">
+          <span class="task-text">${escapeHtml(g.text)}</span>
+          <div class="task-meta">
+            <span class="badge badge-${g.priority}">${g.priority}</span>
+            <span class="badge badge-tag-${g.tag}">${g.tag}</span>
+          </div>
+        </div>
+        <button class="task-delete" onclick="deleteWeekGoal(${g.id})">×</button>
+      </div>
+    `).join('');
+  }
+
+  function renderMonthly() {
+    const container = document.getElementById('monthly-tasks');
+    if (monthlyGoals.length === 0) { container.innerHTML = '<div class="empty-state">No monthly goals yet</div>'; return; }
+    const pMap = { high: 0, med: 1, low: 2 };
+    const sorted = [...monthlyGoals].sort((a, b) => {
+      if (a.completed !== b.completed) return a.completed ? 1 : -1;
+      return pMap[a.priority] - pMap[b.priority];
+    });
+    container.innerHTML = sorted.map(g => `
+      <div class="task-item priority-${g.priority} ${g.completed ? 'completed' : ''}">
+        <input type="checkbox" ${g.completed ? 'checked' : ''} onchange="toggleMonthGoal(${g.id})">
+        <div class="task-content">
+          <span class="task-text">${escapeHtml(g.text)}</span>
+          <div class="task-meta">
+            <span class="badge badge-${g.priority}">${g.priority}</span>
+            <span class="badge badge-tag-${g.tag}">${g.tag}</span>
+          </div>
+        </div>
+        <button class="task-delete" onclick="deleteMonthGoal(${g.id})">×</button>
+      </div>
+    `).join('');
+  }
+
+  function renderYearly() {
+    const container = document.getElementById('yearly-tasks');
+    const yearView = document.getElementById('year-view');
+    if (yearlyGoals.length === 0) {
+      container.innerHTML = '<div class="empty-state">No yearly goals yet</div>';
+    } else {
+      const pMap = { high: 0, med: 1, low: 2 };
+      const sorted = [...yearlyGoals].sort((a, b) => {
+        if (a.completed !== b.completed) return a.completed ? 1 : -1;
+        return pMap[a.priority] - pMap[b.priority];
+      });
+      container.innerHTML = sorted.map(g => `
+        <div class="task-item priority-${g.priority} ${g.completed ? 'completed' : ''}">
+          <input type="checkbox" ${g.completed ? 'checked' : ''} onchange="toggleYearGoal(${g.id})">
+          <div class="task-content">
+            <span class="task-text">${escapeHtml(g.text)}</span>
+            <div class="task-meta">
+              <span class="badge badge-${g.priority}">${g.priority}</span>
+              <span class="badge badge-tag-${g.tag}">${g.tag}</span>
+            </div>
+          </div>
+          <button class="task-delete" onclick="deleteYearGoal(${g.id})">×</button>
+        </div>
+      `).join('');
+    }
+    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    const now = new Date(selectedDate + 'T00:00:00');
+    const currentYear = now.getFullYear();
+    yearView.innerHTML = months.map((m, i) => {
+      const monthTasks = Object.entries(days).filter(([date]) => {
+        const d = new Date(date + 'T00:00:00');
+        return d.getFullYear() === currentYear && d.getMonth() === i;
+      });
+      let total = 0, done = 0;
+      monthTasks.forEach(([_, data]) => { data.tasks.forEach(t => { total++; if (t.completed) done++; }); });
+      const score = total > 0 ? Math.round((done / total) * 100) : 0;
+      return `<div class="month-card"><div class="m-name">${m}</div><div class="m-score">${score}%</div><div class="m-bar"><div class="m-bar-fill" style="width:${score}%"></div></div></div>`;
+    }).join('');
+  }
+
+  function renderCalendar() {
+    const grid = document.getElementById('calendar-grid');
+    const now = new Date(selectedDate + 'T00:00:00');
+    const year = now.getFullYear();
+    const month = now.getMonth();
+    const firstDay = new Date(year, month, 1).getDay();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const todayStr = new Date().toISOString().split('T')[0];
+    const headers = ['S','M','T','W','T','F','S'];
+    let html = headers.map(h => `<div class="cal-header">${h}</div>`).join('');
+    for (let i = 0; i < firstDay; i++) html += '<div class="cal-cell empty"></div>';
+    for (let d = 1; d <= daysInMonth; d++) {
+      const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+      const dayData = days[dateStr];
+      const hasTasks = dayData && dayData.tasks.length > 0;
+      const isToday = dateStr === todayStr;
+      const isSelected = dateStr === selectedDate;
+      let dots = '';
+      if (hasTasks) {
+        const priorities = dayData.tasks.map(t => t.priority);
+        const unique = [...new Set(priorities)].slice(0, 3);
+        const dotColors = { high: 'var(--priority-high)', med: 'var(--priority-med)', low: 'var(--priority-low)' };
+        dots = '<div class="cal-dots">' + unique.map(p => `<div class="cal-dot" style="background:${dotColors[p]}"></div>`).join('') + '</div>';
+      }
+      html += `<div class="cal-cell ${hasTasks ? 'has-tasks' : ''} ${isToday ? 'today' : ''} ${isSelected ? 'selected' : ''}" onclick="selectDate('${dateStr}')">${d}${dots}</div>`;
+    }
+    grid.innerHTML = html;
+  }
+
+  function updateStats() {
+    const allDates = Object.keys(days);
+    document.getElementById('stat-total').textContent = allDates.length;
+    let streak = 0;
+    const today = new Date().toISOString().split('T')[0];
+    let checkDate = new Date(today);
+    while (true) {
+      const ds = checkDate.toISOString().split('T')[0];
+      if (days[ds] && days[ds].tasks.some(t => t.completed)) { streak++; checkDate.setDate(checkDate.getDate() - 1); }
+      else if (ds === today) { checkDate.setDate(checkDate.getDate() - 1); }
+      else { break; }
+    }
+    document.getElementById('stat-streak').textContent = streak;
+    let totalTasks = 0, completedTasks = 0, priorityDone = 0;
+    allDates.forEach(d => {
+      days[d].tasks.forEach(t => {
+        totalTasks++;
+        if (t.completed) { completedTasks++; if (t.priority === 'high') priorityDone++; }
+      });
+    });
+    weeklyGoals.forEach(g => { totalTasks++; if (g.completed) completedTasks++; if (g.priority === 'high' && g.completed) priorityDone++; });
+    monthlyGoals.forEach(g => { totalTasks++; if (g.completed) completedTasks++; if (g.priority === 'high' && g.completed) priorityDone++; });
+    yearlyGoals.forEach(g => { totalTasks++; if (g.completed) completedTasks++; if (g.priority === 'high' && g.completed) priorityDone++; });
+    const pct = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+    document.getElementById('stat-completion').textContent = pct + '%';
+    document.getElementById('stat-priority').textContent = priorityDone;
+  }
+
+  function exportData() {
+    const data = { days, weeklyGoals, monthlyGoals, yearlyGoals, reviews, exportedAt: new Date().toISOString() };
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `life-tracker-backup-${new Date().toISOString().split('T')[0]}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  function importData(input) {
+    const file = input.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = e => {
+      try {
+        const data = JSON.parse(e.target.result);
+        if (data.days) days = data.days;
+        if (data.weeklyGoals) weeklyGoals = data.weeklyGoals;
+        if (data.monthlyGoals) monthlyGoals = data.monthlyGoals;
+        if (data.yearlyGoals) yearlyGoals = data.yearlyGoals;
+        if (data.reviews) reviews = data.reviews;
+        save();
+        saveReviews();
+        renderAll();
+        loadReviews();
+        alert('Data imported successfully! ✨');
+      } catch (err) { alert('Invalid file format'); }
+    };
+    reader.readAsText(file);
+    input.value = '';
+  }
+
+  function formatDate(dateStr) {
+    const d = new Date(dateStr + 'T00:00:00');
+    return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+  }
+  function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+  }
+  function save() {
+    localStorage.setItem('lt2_days', JSON.stringify(days));
+    localStorage.setItem('lt2_weekly', JSON.stringify(weeklyGoals));
+    localStorage.setItem('lt2_monthly', JSON.stringify(monthlyGoals));
+    localStorage.setItem('lt2_yearly', JSON.stringify(yearlyGoals));
+  }
+  function saveReviews() { localStorage.setItem('lt2_reviews', JSON.stringify(reviews)); }
+
+  document.getElementById('task-input').addEventListener('keypress', e => { if (e.key === 'Enter') addTask(); });
+  document.getElementById('week-goal-input').addEventListener('keypress', e => { if (e.key === 'Enter') addWeekGoal(); });
+  document.getElementById('month-goal-input').addEventListener('keypress', e => { if (e.key === 'Enter') addMonthGoal(); });
+  document.getElementById('year-goal-input').addEventListener('keypress', e => { if (e.key === 'Enter') addYearGoal(); });
+</script>
+</body>
+</html>
